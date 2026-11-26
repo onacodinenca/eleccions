@@ -226,9 +226,10 @@ function draw(){
   x.textBaseline = "alphabetic";
 
   // Capçalera verda
-  const headH = format==="story" ? 420 : format==="quadrat" ? 250 : 300;
+  const headH = format==="story" ? 500 : format==="quadrat" ? 250 : 300;
+  const logoY = format==="story" ? 220 : P-6;          // story: fora de la franja que tapa Instagram
   x.fillStyle = C.ona; x.fillRect(0,0,W,headH);
-  if (logo){ const lw = 300, lh = lw*logo.height/logo.width; x.drawImage(logo, W-P-lw, P-6, lw, lh); }
+  if (logo){ const lw = 300, lh = lw*logo.height/logo.width; x.drawImage(logo, W-P-lw, logoY, lw, lh); }
   x.fillStyle = "rgba(255,255,255,.85)"; x.font = "700 26px Inter"; x.letterSpacing = "3px";
   x.fillText("ELECCIONS AL CONGRÉS · 29N", P, headH-150);
   x.letterSpacing = "0px";
@@ -252,13 +253,13 @@ function draw(){
 
   // Partits
   // Només hi caben les files que tinguin com a mínim 88 px; la resta s'agrupa a "Altres"
-  const footH = 120, MIN_ROW = format==="quadrat" ? 80 : 88;
-  const candidates = S.rows.filter(r=>r.v>0 || (S.T===0 && r.s23!=null));
+  const footH = format==="story" ? 320 : 120, MIN_ROW = format==="story" ? 72 : format==="quadrat" ? 80 : 88;   // story: peu per sobre de la barra de resposta
+  const candidates = S.rows;
   const fits = Math.floor((H - y - footH - 50) / MIN_ROW);
   const shown = candidates.slice(0, Math.max(1, Math.min(F.max, fits)));
   const rest = S.rows.filter(r=>!shown.includes(r)).reduce((s,r)=>s+r.v,0);
   const avail = H - y - footH - (rest>0 ? 50 : 0);
-  const rowH = Math.min(118, Math.floor(avail / Math.max(shown.length,1)));
+  const rowH = Math.min(format==="story" ? 104 : 118, Math.floor(avail / Math.max(shown.length,1)));
   const maxS = Math.max(...shown.map(r=>Math.max(r.s26, r.s23||0)), 0.01);
   const nameW = 300, valX = W-P, barX = P+nameW, barW = W-P-barX-210;
   shown.forEach((r,i)=>{
@@ -300,7 +301,7 @@ function draw(){
   if (S.f < llindar - 1e-9){
     const txt = `PROVISIONAL · ${pct(S.f, 1)}% ESCRUTAT`;
     x.font = "800 28px Inter"; const tw = x.measureText(txt).width + 44;
-    const by = Math.max(30, headH-232);
+    const by = format==="story" ? headH-250 : Math.max(30, headH-232);
     x.fillStyle = C.warn; roundRect(x, P, by, tw, 52, 26); x.fill();
     x.fillStyle = "#FFFFFF"; x.fillText(txt, P+22, by+36);
   }
