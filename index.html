@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resultats 29N · Sant Feliu de Codines · Ona Codinenca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ona:#6E8F3A; --ona-deep:#4F6B24; --ona-wash:#EEF3E4;
+  --bg:#FFFFFF; --card:#FFFFFF; --fg:#1E2419; --muted:#626B58; --line:#DFE3D6; --track:#EEF0E9;
+  --up:#2F7D3B; --down:#B23A2E;
+  --f-display:"Bitter", Georgia, serif;
+  --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+/* Mode fosc només si s'afegeix ?tema=fosc (la web d'Ona és clara) */
+:root[data-theme="dark"]{
+  --ona:#9DBE63; --ona-deep:#B9D88A; --ona-wash:#25301A;
+  --bg:#12160F; --card:#1A2015; --fg:#E9EDE2; --muted:#A3AC97; --line:#2E3727; --track:#262E20;
+  --up:#7CC488; --down:#F0877B; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.widget{container-type:inline-size;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;max-width:900px;margin:0 auto}
+.top{background:var(--ona);color:#fff;padding:14px 18px 12px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between}
+:root[data-theme="dark"] .top{color:#12160F}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;opacity:.85}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);line-height:1.1;margin:2px 0 0;text-wrap:balance}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:currentColor;animation:pulse 1.8s infinite}
+.status.idle .dot{animation:none;opacity:.6}
+.status.err .dot{animation:none;background:#FFD54F}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.dot{animation:none}.bar i,.bar u,.progress i{transition:none!important}}
+.progress{height:6px;background:var(--ona-wash)}
+.progress i{display:block;height:100%;background:var(--ona-deep);width:0;transition:width .6s ease}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.kpi{padding:12px 18px;border-right:1px solid var(--line);min-width:0}
+.kpi:last-child{border-right:0}
+.kpi .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--f-display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .s{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 18px 4px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw26{width:18px;height:10px;border-radius:2px;background:var(--fg)}
+.sw23{width:18px;height:4px;border-radius:2px;background:var(--fg);opacity:.3}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:12px;font-weight:600;border:0;background:transparent;color:var(--muted);padding:5px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ona-wash);color:var(--ona-deep)}
+.seg button:focus-visible{outline:2px solid var(--ona);outline-offset:-2px}
+.cols,.row{display:grid;grid-template-columns:minmax(100px,150px) 1fr 62px 58px 66px;gap:12px}
+.cols{padding:8px 18px 0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.cols div:nth-child(n+3){text-align:right}
+.rows{padding:6px 18px 10px;display:flex;flex-direction:column}
+.row{align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.name{display:flex;align-items:center;gap:8px;font-weight:600;min-width:0}
+.name b{width:10px;height:10px;border-radius:3px;flex:none}
+.name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{position:relative;height:22px;background:var(--track);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:7px;border-radius:4px 4px 0 0;width:0;transition:width .6s ease}
+.bar u{position:absolute;left:0;bottom:0;height:4px;border-radius:2px;opacity:.38;width:0;transition:width .6s ease}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.pct{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.delta{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;white-space:nowrap}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.eq{color:var(--muted)}
+.note{margin:4px 18px 8px;padding:12px 14px;border-radius:10px;background:var(--ona-wash);color:var(--ona-deep);font-size:14px}
+.fn{margin:0;padding:0 18px 10px;font-size:12px;color:var(--muted)}
+@container (max-width: 560px){.fn{padding:0 14px 10px}}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;padding:10px 18px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.foot b{color:var(--fg);font-weight:600}
+.foot a{color:inherit}
+@container (max-width: 560px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(2){border-right:0}
+  .kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .kpi{padding:10px 14px}
+  .kpi .v{font-size:21px}
+  .cols{display:none}
+  .rows{padding:4px 14px 8px}
+  .tools,.foot{padding-left:14px;padding-right:14px}
+  .top{padding:12px 14px 10px}
+  .row{grid-template-columns:1fr auto auto auto;grid-template-areas:"n v p d" "b b b b";gap:6px 10px;padding:10px 0}
+  .name{grid-area:n}.num{grid-area:v}.pct{grid-area:p}.delta{grid-area:d}.bar{grid-area:b;height:18px}
+  .bar i{bottom:6px}
+  .note{margin:4px 14px 8px}
+}
+</style>
+</head>
+<body>
+<section class="widget" aria-labelledby="t">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Ona Codinenca 107.2 FM · Congrés 29N</div>
+      <h1 id="t">Resultats a Sant Feliu de Codines</h1>
+    </div>
+    <div class="status idle" id="status" role="status"><span class="dot"></span><span id="statustxt">Carregant…</span></div>
+  </header>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+  <div class="kpis">
+    <div class="kpi"><div class="k">Escrutat</div><div class="v" id="kEsc">—</div><div class="s" id="kEscS">&nbsp;</div></div>
+    <div class="kpi"><div class="k">Participació</div><div class="v" id="kPart">—</div><div class="s" id="kPartS">&nbsp;</div></div>
+    <div class="kpi"><div class="k">Vots comptats</div><div class="v" id="kVots">—</div><div class="s" id="kVotsS">&nbsp;</div></div>
+    <div class="kpi"><div class="k">Cens</div><div class="v" id="kCens">—</div><div class="s">electors</div></div>
+  </div>
+  <div class="tools">
+    <div class="legend"><span><i class="sw26"></i>29N 2026</span><span><i class="sw23"></i>23J 2023</span></div>
+    <div class="seg" role="group" aria-label="Unitat">
+      <button type="button" id="uPct" aria-pressed="true">%</button>
+      <button type="button" id="uVots" aria-pressed="false">Vots</button>
+    </div>
+  </div>
+  <div class="note" id="note" hidden></div>
+  <div class="cols" aria-hidden="true"><div>Partit</div><div></div><div>Vots</div><div>%</div><div>vs 2023</div></div>
+  <div class="rows" id="rows"></div>
+  <p class="fn" id="fn"></p>
+  <footer class="foot">
+    <span id="upd">&nbsp;</span>
+    <a href="https://onacodinenca.cat" target="_blank" rel="noopener">onacodinenca.cat</a>
+  </footer>
+</section>
+
+<script>
+/* ===================== CONFIGURACIÓ ===================== */
+const CONFIG = {
+  // Pestanya "Entrada de dades" publicada com a CSV
+  csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyZDitFZpVx6YvGhRGa3v7OEFRjDVyNb-bPdZmoUBTm3glNf7FeY5_5YskX3F23_tSv6-_ccSR-kXb/pub?gid=12&single=true&output=csv",
+  refreshSeconds: 30,
+  censDefecte: 4834,          // s'usa si la fila "Cens" de la fulla és 0
+  participacio2023: 0.583,
+  // Nom exacte de la fila a la fulla → nom curt, color, vots 23J 2023 (null = no es presentava)
+  partits: {
+    "PSC-PSOE":        {nom:"PSC",          color:"#D7191C", v23:727},
+    "ERC":             {nom:"ERC",          color:"#F2A900", v23:573},
+    "JxCAT":           {nom:"Junts",        color:"#1BB5A6", v23:485},
+    "Comuns-FA":       {nom:"Comuns",       color:"#B5246F", v23:433},
+    "Alhora":          {nom:"Alhora",       color:"#6D4C9F", v23:null},
+    "PP":              {nom:"PP",           color:"#1D79C9", v23:180},
+    "VOX":             {nom:"VOX",          color:"#5FAF2C", v23:154},
+    "Partit Comunista":{nom:"PCTC",         color:"#9E1B1B", v23:null},
+    "SALF":            {nom:"SALF",         color:"#7A5C3E", v23:null},
+    "Frente Obrero":   {nom:"Frente Obrero",color:"#C2410C", v23:null},
+    "Democracia sXXI": {nom:"Democracia sXXI",color:"#5B7083", v23:null},
+  },
+  // 23J 2023, de la pestanya "Resum de dades" (col. V): vots vàlids = candidatures + blancs = 2.790 (nuls 30 a part).
+  // Els % es calculen sobre vots vàlids, com fa la fulla i com fa el Ministeri.
+  valids2023: 2790,
+  // Partits del 2023 que no es presenten el 2026 (surten en una nota)
+  noPresentats2023: [["CUP",128],["PACMA",36],["PDeCAT",32],["Altres",16]],
+};
+/* ======================================================== */
+
+const params = new URLSearchParams(location.search);
+if (params.get("tema")==="fosc") document.documentElement.dataset.theme="dark";
+const DEMO = params.has("demo");
+
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("ca-ES");
+const pct = (x,d=1) => (x*100).toLocaleString("ca-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
+const num = s => { s=(s||"").trim().replace(/\./g,"").replace(",","."); const n=parseFloat(s); return isFinite(n)?n:0; };
+let unit="pct", last=null, demoStep=0;
+
+function parseCSV(text){
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=""; }
+    else if(c==='\n'){ row.push(f); rows.push(row); row=[]; f=""; }
+    else if(c!=='\r') f+=c;
+  }
+  if(f||row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+
+function readSheet(rows){
+  const head = rows[0]||[];
+  const iTot = head.findIndex(h=>h.trim().toUpperCase()==="TOTAL");
+  const mesaCols = []; for(let i=1;i<(iTot>0?iTot:head.length);i++) if(head[i].trim()) mesaCols.push(i);
+  const byLabel = {}; rows.forEach(r=>{ const k=(r[0]||"").trim(); if(k && !(k in byLabel)) byLabel[k]=r; });
+  const val = (label) => { const r=byLabel[label]; if(!r) return 0; return iTot>0 ? num(r[iTot]) : mesaCols.reduce((s,i)=>s+num(r[i]),0); };
+  const perMesa = (label) => { const r=byLabel[label]; return mesaCols.map(i=> r?num(r[i]):0); };
+  const e0 = ((rows[1]||[])[0]||"").trim();          // cel·la A2, p. ex. "78,50%"
+  const escFulla = e0.includes("%") ? num(e0)/100 : num(e0);
+  const partits = Object.entries(CONFIG.partits).map(([k,p])=>({...p, key:k, v:val(k), present: k in byLabel}));
+  const blancs = val("Blancs"), nuls = val("Nuls");
+  const totalMesa = perMesa("Total");
+  const meses = mesaCols.length, mesesComptades = totalMesa.filter(v=>v>0).length;
+  const cens = val("Cens") || CONFIG.censDefecte;
+  const censMeses = perMesa("Cens");
+  const censComptat = censMeses.some(v=>v>0) ? censMeses.reduce((s,v,i)=>s+(totalMesa[i]>0?v:0),0) : 0;
+  // % escrutat: si hi ha els "Vots 20h" de TOTES les meses, vots comptats / votants (com la fórmula de la fulla).
+  // Si no, meses comptades / meses totals, per no mostrar un 100% fals.
+  const v20Mesa = perMesa("Vots 20h");
+  const escrutat = v20Mesa.length && v20Mesa.every(v=>v>0)
+      ? totalMesa.reduce((s,v)=>s+v,0) / v20Mesa.reduce((s,v)=>s+v,0)
+      : (meses ? mesesComptades/meses : escFulla);
+  return { escrutat: Math.min(1,Math.max(0,escrutat)), partits, blancs, nuls, meses, mesesComptades, cens, censComptat,
+           v12:val("Vots 12h"), v18:val("Vots 18h"), v20:val("Vots 20h"),
+           missing: Object.keys(CONFIG.partits).filter(k=>!(k in byLabel)) };
+}
+
+function fakeData(d){ // ?demo : omple la fulla buida amb números inventats per veure com queda
+  demoStep = Math.min(d.meses, demoStep+1);
+  const f = demoStep/d.meses, base={ "PSC-PSOE":790,"ERC":505,"JxCAT":452,"Comuns-FA":352,"Alhora":96,"PP":214,"VOX":181,"Partit Comunista":14,"SALF":22,"Frente Obrero":9,"Democracia sXXI":5 };
+  d.partits.forEach(p=>p.v=Math.round((base[p.key]||0)*f*(0.9+0.2*Math.sin(p.v23||7))));
+  d.blancs=Math.round(38*f); d.nuls=Math.round(23*f); d.mesesComptades=demoStep; d.escrutat=f; d.v20=Math.round(2790);
+  return d;
+}
+
+function render(d){
+  const Tc = d.partits.reduce((s,p)=>s+p.v,0);   // vots a candidatures
+  const T = Tc + d.blancs;                          // vots vàlids: base del %
+  const votants = T + d.nuls;
+  const live = T>0 || d.escrutat>0;
+  const f = d.escrutat || (d.meses ? d.mesesComptades/d.meses : 0);
+  const done = f>=0.9999;
+
+  $("prog").style.width = (f*100)+"%";
+  $("kEsc").textContent = pct(f, f>0&&f<1?1:0)+"%";
+  $("kEscS").textContent = d.meses ? `${d.mesesComptades} de ${d.meses} meses` : " ";
+  $("kCens").textContent = fmt(d.cens);
+
+  // Participació: 1) vots a les 20 h si s'han entrat; 2) votants / cens de les meses comptades; 3) avanç de les 18 h / 12 h
+  let part=null, partLbl="";
+  if(d.v20>0){ part=d.v20/d.cens; partLbl="final"; }
+  else if(live && d.censComptat>0){ part=votants/d.censComptat; partLbl="meses escrutades"; }
+  else if(d.v18>0){ part=d.v18/d.cens; partLbl="avanç 18 h"; }
+  else if(d.v12>0){ part=d.v12/d.cens; partLbl="avanç 12 h"; }
+  $("kPart").textContent = part!=null ? pct(part)+"%" : "—";
+  $("kPartS").textContent = part!=null && partLbl.startsWith("final")
+      ? `2023: ${pct(CONFIG.participacio2023)}% (${part>=CONFIG.participacio2023?"+":"−"}${pct(Math.abs(part-CONFIG.participacio2023))})`
+      : part!=null ? `${partLbl} · 2023: ${pct(CONFIG.participacio2023)}%` : `2023: ${pct(CONFIG.participacio2023)}%`;
+  $("kVots").textContent = live ? fmt(votants) : "—";
+  $("kVotsS").textContent = live ? `${fmt(d.blancs)} blancs · ${fmt(d.nuls)} nuls` : " ";
+
+  const st=$("status"); st.className="status"+(live&&!done?"":" idle");
+  $("statustxt").textContent = !live ? "Esperant resultats" : done ? "Escrutini complet" : "En directe";
+
+  const note=$("note");
+  if(!live){ note.hidden=false; note.textContent="Encara no hi ha cap mesa escrutada. Les barres fines mostren el resultat del 23J 2023 com a referència."; }
+  else note.hidden=true;
+
+  const T23 = CONFIG.valids2023;
+  const sorted=[...d.partits].sort((a,b)=> live ? (b.v-a.v)||((b.v23||0)-(a.v23||0)) : ((b.v23||0)-(a.v23||0)));
+  const maxS = Math.max(...sorted.map(p=>T?p.v/T:0), ...sorted.map(p=>(p.v23||0)/T23), 0.001);
+  const scale23 = live ? (f||1) : 1;
+  const maxV = Math.max(...sorted.map(p=>p.v), ...sorted.map(p=>(p.v23||0)*scale23), 1);
+  const rows=$("rows");
+  sorted.forEach(p=>{
+    let r = rows.querySelector(`[data-k="${CSS.escape(p.key)}"]`);
+    if(!r){
+      r=document.createElement("div"); r.className="row"; r.dataset.k=p.key;
+      r.innerHTML=`<div class="name"><b style="background:${p.color}"></b><span>${p.nom}</span></div>
+        <div class="bar"><i style="background:${p.color}"></i><u style="background:${p.color}"></u></div>
+        <div class="num"></div><div class="pct"></div><div class="delta"></div>`;
+    }
+    rows.appendChild(r);
+    const s26=T?p.v/T:0, s23=p.v23!=null?p.v23/T23:0;
+    r.querySelector(".bar i").style.width = ((unit==="pct"? s26/maxS : p.v/maxV)*100)+"%";
+    r.querySelector(".bar u").style.width = ((unit==="pct"? s23/maxS : (p.v23||0)*scale23/maxV)*100)+"%";
+    r.querySelector(".num").textContent = live ? fmt(p.v) : "—";
+    r.querySelector(".pct").textContent = live ? pct(s26)+"%" : (p.v23!=null? pct(s23)+"%" : "—");
+    const dEl=r.querySelector(".delta");
+    if(!live){ dEl.className="delta eq"; dEl.textContent = p.v23!=null ? "23J" : "nou"; }
+    else if(p.v23==null){ dEl.className="delta eq"; dEl.textContent="nou"; }
+    else { const dd=(s26-s23)*100; const z=Math.abs(dd)<0.05;
+      dEl.className="delta "+(z?"eq":dd>0?"up":"down");
+      dEl.textContent=(z?"= ":dd>0?"▲ ":"▼ ")+Math.abs(dd).toFixed(1).replace(".",",");
+      dEl.title="punts percentuals respecte del 23J 2023"; }
+    r.setAttribute("aria-label",`${p.nom}: ${live?fmt(p.v)+" vots, "+pct(s26)+"%":"sense dades"}`);
+  });
+}
+
+async function load(){
+  try{
+    const res = await fetch(CONFIG.csv + "&_=" + Date.now(), {cache:"no-store"});
+    if(!res.ok) throw new Error(res.status);
+    let d = readSheet(parseCSV(await res.text()));
+    if(d.missing.length) console.warn("Files no trobades a la fulla:", d.missing);
+    if(DEMO) d = fakeData(d);
+    last=d; render(d);
+    const now=new Date();
+    $("upd").innerHTML = `Actualitzat a les <b>${now.toLocaleTimeString("ca-ES",{hour:"2-digit",minute:"2-digit"})}</b> · s'actualitza sol${DEMO?" · <b>DADES DE PROVA</b>":""}`;
+  }catch(e){
+    const st=$("status"); st.className="status err"; $("statustxt").textContent="Reconnectant…";
+    console.error(e);
+  }
+}
+
+$("fn").textContent = "% sobre vots vàlids. El 23J 2023 també es van presentar: " +
+  CONFIG.noPresentats2023.map(([n,v])=>`${n} ${pct(v/CONFIG.valids2023)}%`).join(" · ") + ".";
+
+const uPct=$("uPct"), uVots=$("uVots");
+function setUnit(u){ unit=u; uPct.setAttribute("aria-pressed",u==="pct"); uVots.setAttribute("aria-pressed",u==="vots"); if(last) render(last); }
+uPct.onclick=()=>setUnit("pct"); uVots.onclick=()=>setUnit("vots");
+
+load();
+setInterval(load, (DEMO?4:CONFIG.refreshSeconds)*1000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+</script>
+</body>
+</html>
