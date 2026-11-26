@@ -130,20 +130,23 @@ const CONFIG = {
   refreshSeconds: 30,
   censDefecte: 4834,          // s'usa si la fila "Cens" de la fulla és 0
   participacio2023: 0.583,
-  // Nom exacte de la fila a la fulla → nom curt, color, vots 23J 2023 (null = no es presentava)
+  // Color i vots del 23J 2023 per a cada partit, pel nom EXACTE de la fila a la fulla.
+  // El giny mostra els noms tal com són a la fulla i agafa sol qualsevol partit nou
+  // (entre la fila 3 i la primera fila buida). Un partit que no surti aquí es pinta gris i compta com a "nou".
   partits: {
-    "PSC-PSOE":        {nom:"PSC",          color:"#D7191C", v23:727},
-    "ERC":             {nom:"ERC",          color:"#F2A900", v23:573},
-    "JxCAT":           {nom:"Junts",        color:"#1BB5A6", v23:485},
-    "Comuns-FA":       {nom:"Comuns",       color:"#B5246F", v23:433},
-    "Alhora":          {nom:"Alhora",       color:"#6D4C9F", v23:null},
-    "PP":              {nom:"PP",           color:"#1D79C9", v23:180},
-    "VOX":             {nom:"VOX",          color:"#5FAF2C", v23:154},
-    "Partit Comunista":{nom:"PCTC",         color:"#9E1B1B", v23:null},
-    "SALF":            {nom:"SALF",         color:"#7A5C3E", v23:null},
-    "Frente Obrero":   {nom:"Frente Obrero",color:"#C2410C", v23:null},
-    "Democracia sXXI": {nom:"Democracia sXXI",color:"#5B7083", v23:null},
+    "PSC-PSOE":        {color:"#D7191C", v23:727},
+    "ERC":             {color:"#F2A900", v23:573},
+    "JxCAT":           {color:"#1BB5A6", v23:485},
+    "Comuns-FA":       {color:"#B5246F", v23:433},   // 2023: SUMAR
+    "Alhora":          {color:"#6D4C9F", v23:null},
+    "PP":              {color:"#1D79C9", v23:180},
+    "VOX":             {color:"#5FAF2C", v23:154},
+    "Partit Comunista":{color:"#9E1B1B", v23:null},
+    "SALF":            {color:"#7A5C3E", v23:null},
+    "Frente Obrero":   {color:"#C2410C", v23:null},
+    "Democracia sXXI": {color:"#5B7083", v23:null},
   },
+  colorDefecte: "#8A9480",
   // 23J 2023, de la pestanya "Resum de dades" (col. V): vots vàlids = candidatures + blancs = 2.790 (nuls 30 a part).
   // Els % es calculen sobre vots vàlids, com fa la fulla i com fa el Ministeri.
   valids2023: 2790,
@@ -185,7 +188,9 @@ function readSheet(rows){
   const perMesa = (label) => { const r=byLabel[label]; return mesaCols.map(i=> r?num(r[i]):0); };
   const e0 = ((rows[1]||[])[0]||"").trim();          // cel·la A2, p. ex. "78,50%"
   const escFulla = e0.includes("%") ? num(e0)/100 : num(e0);
-  const partits = Object.entries(CONFIG.partits).map(([k,p])=>({...p, key:k, v:val(k), present: k in byLabel}));
+  // Partits = files des de la 3a fins a la primera fila buida, amb el nom tal com és a la fulla
+  const noms = []; for(let i=2;i<rows.length;i++){ const k=(rows[i][0]||"").trim(); if(!k) break; noms.push(k); }
+  const partits = noms.map(k=>{ const c=CONFIG.partits[k]||{}; return {key:k, nom:k, color:c.color||CONFIG.colorDefecte, v23:(c.v23??null), v:val(k)}; });
   const blancs = val("Blancs"), nuls = val("Nuls");
   const totalMesa = perMesa("Total");
   const meses = mesaCols.length, mesesComptades = totalMesa.filter(v=>v>0).length;
@@ -200,7 +205,7 @@ function readSheet(rows){
       : (meses ? mesesComptades/meses : escFulla);
   return { escrutat: Math.min(1,Math.max(0,escrutat)), partits, blancs, nuls, meses, mesesComptades, cens, censComptat,
            v12:val("Vots 12h"), v18:val("Vots 18h"), v20:val("Vots 20h"),
-           missing: Object.keys(CONFIG.partits).filter(k=>!(k in byLabel)) };
+           missing: Object.keys(CONFIG.partits).filter(k=>!noms.includes(k)) };
 }
 
 function fakeData(d){ // ?demo : omple la fulla buida amb números inventats per veure com queda
