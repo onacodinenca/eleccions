@@ -1,0 +1,5 @@
+# Fitxers locals que no es publiquen
+LLEGEIX-ME.txt
+*.zip
+.claude/
+.DS_Store

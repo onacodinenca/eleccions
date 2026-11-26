@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Imatge per a xarxes · Eleccions 29N · Ona Codinenca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--ona:#6E8F3A;--ona-deep:#4F6B24;--ona-wash:#EEF3E4;--fg:#1E2419;--muted:#626B58;--line:#DFE3D6;--warn:#B7791F}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#F6F7F2;color:var(--fg);font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45;padding:20px 16px 40px}
+.wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:820px){.wrap{grid-template-columns:1fr}}
+h1{font-family:"Bitter",Georgia,serif;font-weight:800;font-size:24px;margin:0 0 4px;grid-column:1/-1}
+.sub{grid-column:1/-1;color:var(--muted);margin:-12px 0 4px}
+.preview{background:#fff;border:1px solid var(--line);border-radius:5px;padding:12px;min-width:0}
+canvas{display:block;width:100%;height:auto;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:5px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1;font:inherit;font-size:13px;font-weight:600;border:0;background:#fff;color:var(--muted);padding:8px 6px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ona-wash);color:var(--ona-deep)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:6px;padding:12px 14px;cursor:pointer;background:var(--ona);color:#fff;width:100%}
+.btn.sec{background:#fff;color:var(--ona-deep);border:1px solid var(--ona)}
+.btn:disabled{background:#C9CFC0;color:#fff;cursor:not-allowed;border-color:#C9CFC0}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible{outline:2px solid var(--ona);outline-offset:2px}
+.state{font-size:14px;padding:10px 12px;border-radius:6px;background:var(--ona-wash);color:var(--ona-deep)}
+.state.wait{background:#FBF3E4;color:#7A5212}
+label.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.row{display:flex;align-items:center;gap:8px}
+input[type=number]{width:72px;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px}
+.small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Imatge per a xarxes</h1>
+  <p class="sub">Eleccions al Congrés 29N · Sant Feliu de Codines · dades en directe del recompte d'Ona Codinenca</p>
+
+  <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Previsualització de la imatge"></canvas></div>
+
+  <div class="panel">
+    <div>
+      <div class="k">Format</div>
+      <div class="seg" role="group" aria-label="Format">
+        <button type="button" data-f="quadrat">Quadrat</button>
+        <button type="button" data-f="vertical" aria-pressed="true">Vertical</button>
+        <button type="button" data-f="story">Story</button>
+      </div>
+      <div class="small" id="fmtInfo" style="margin-top:6px">1080 × 1350 px · publicació d'Instagram</div>
+    </div>
+
+    <div class="state wait" id="state">Carregant dades…</div>
+
+    <div>
+      <div class="k">Llindar per publicar</div>
+      <div class="row"><input id="llindar" type="number" min="0" max="100" step="5" value="100"><span>% escrutat</span></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="provisional"> <span>Genera-la igualment, amb l'etiqueta <b>PROVISIONAL</b></span></label>
+
+    <button class="btn" id="dl" type="button" disabled>Baixa la imatge</button>
+    <button class="btn sec" id="share" type="button" hidden>Comparteix…</button>
+    <div class="small" id="upd">&nbsp;</div>
+  </div>
+</div>
+
+<script>
+/* ========= Lògica de dades: la mateixa del giny (index.html) ========= */
+const CONFIG = {
+  // Font principal: la fulla en directe (pestanya "Entrada de dades", gid=12). Cal que la fulla estigui
+  // compartida com a "Qualsevol persona amb l'enllaç: LECTOR". Llegeix les dades al moment.
+  csvViu: "https://docs.google.com/spreadsheets/d/1e6iMBITaT4oST5oIbllKUnfcdV664T-v2K8KvSZ2J0k/gviz/tq?tqx=out:csv&gid=12&headers=0",
+  // Recanvi si la principal falla: la versió "Publicar al web" (va amb ~30 s de retard i de vegades
+  // Google serveix còpies antigues; per això, en aquest mode, mai s'accepten dades amb menys vots que les darreres)
+  csvPublicat: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyZDitFZpVx6YvGhRGa3v7OEFRjDVyNb-bPdZmoUBTm3glNf7FeY5_5YskX3F23_tSv6-_ccSR-kXb/pub?gid=12&single=true&output=csv",
+  refreshSeconds: 15,
+  llindarXarxes: 100,          // % escrutat a partir del qual es pot publicar la imatge (xarxes.html)
+  // Disposició de la fulla, per si la capçalera no arriba (la font en directe la perd):
+  // meses a les columnes B–I, TOTAL a la K
+  columnesMeses: [1,2,3,4,5,6,7,8], columnaTotal: 10,
+  censDefecte: 4834,          // s'usa si la fila "Cens" de la fulla és 0
+  participacio2023: 0.583,
+  // Color i vots del 23J 2023 per a cada partit, pel nom EXACTE de la fila a la fulla.
+  // El giny mostra els noms tal com són a la fulla i agafa sol qualsevol partit nou
+  // (entre la fila 3 i la primera fila buida). Un partit que no surti aquí es pinta gris i compta com a "nou".
+  partits: {
+    "PSC-PSOE":        {color:"#D7191C", v23:727},
+    "ERC":             {color:"#F2A900", v23:573},
+    "JxCAT":           {color:"#1BB5A6", v23:485},
+    "Comuns-FA":       {color:"#B5246F", v23:433},   // 2023: SUMAR
+    "Alhora":          {color:"#6D4C9F", v23:null},
+    "PP":              {color:"#1D79C9", v23:180},
+    "VOX":             {color:"#5FAF2C", v23:154},
+    "Partit Comunista":{color:"#9E1B1B", v23:null},
+    "SALF":            {color:"#7A5C3E", v23:null},
+    "Frente Obrero":   {color:"#C2410C", v23:null},
+    "Democracia sXXI": {color:"#5B7083", v23:null},
+  },
+  colorDefecte: "#8A9480",
+  // 23J 2023, de la pestanya "Resum de dades" (col. V): vots vàlids = candidatures + blancs = 2.790 (nuls 30 a part).
+  // Els % es calculen sobre vots vàlids, com fa la fulla i com fa el Ministeri.
+  valids2023: 2790,
+  // Partits del 2023 que no es presenten el 2026 (surten en una nota)
+  noPresentats2023: [["CUP",128],["PACMA",36],["PDeCAT",32],["Altres",16]],
+};
+
+const num = s => { s=(s||"").trim().replace(/\./g,"").replace(",","."); const n=parseFloat(s); return isFinite(n)?n:0; };
+
+function parseCSV(text){
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=""; }
+    else if(c==='\n'){ row.push(f); rows.push(row); row=[]; f=""; }
+    else if(c!=='\r') f+=c;
+  }
+  if(f||row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+
+function readSheet(rows){
+  const head = rows[0]||[];
+  let iTot = head.findIndex(h=>h.trim().toUpperCase()==="TOTAL");
+  let mesaCols = []; if(iTot>0) for(let i=1;i<iTot;i++) if(head[i].trim()) mesaCols.push(i);
+  if(iTot<=0 || !mesaCols.length){ iTot = CONFIG.columnaTotal; mesaCols = CONFIG.columnesMeses.slice(); }
+  const byLabel = {}; rows.forEach(r=>{ const k=(r[0]||"").trim(); if(k && !(k in byLabel)) byLabel[k]=r; });
+  const val = (label) => { const r=byLabel[label]; if(!r) return 0; return iTot>0 ? num(r[iTot]) : mesaCols.reduce((s,i)=>s+num(r[i]),0); };
+  const perMesa = (label) => { const r=byLabel[label]; return mesaCols.map(i=> r?num(r[i]):0); };
+  const e0 = ((rows[1]||[])[0]||"").trim();          // cel·la A2, p. ex. "78,50%"
+  const escFulla = e0.includes("%") ? num(e0)/100 : num(e0);
+  // Partits = files des de la 3a fins a la primera fila buida, amb el nom tal com és a la fulla
+  // (la font en directe es menja les files buides, així que també s'atura a la fila "Blancs" o qualsevol altra fila fixa)
+  const FIXES = ["blancs","nuls","total","vots 20h","alerta","vots 12h","vots 18h","cens"];
+  const noms = []; for(let i=2;i<rows.length;i++){ const k=(rows[i][0]||"").trim(); if(!k || FIXES.includes(k.toLowerCase())) break; noms.push(k); }
+  const partits = noms.map(k=>{ const c=CONFIG.partits[k]||{}; return {key:k, nom:k, color:c.color||CONFIG.colorDefecte, v23:(c.v23??null), v:val(k)}; });
+  const blancs = val("Blancs"), nuls = val("Nuls");
+  const totalMesa = perMesa("Total");
+  const meses = mesaCols.length, mesesComptades = totalMesa.filter(v=>v>0).length;
+  // Compte: a la fulla, la cel·la TOTAL de la fila "Cens" (K24) és =K19 (els Vots 20h), no el cens.
+  // Per això el cens se suma mesa a mesa (B24:I24); si està buit, s'usa el valor per defecte.
+  const censMeses = perMesa("Cens");
+  const cens = censMeses.reduce((s,v)=>s+v,0) || CONFIG.censDefecte;
+  const censComptat = censMeses.some(v=>v>0) ? censMeses.reduce((s,v,i)=>s+(totalMesa[i]>0?v:0),0) : 0;
+  // % escrutat: si hi ha els "Vots 20h" de TOTES les meses, vots comptats / votants (com la fórmula de la fulla).
+  // Si no, meses comptades / meses totals, per no mostrar un 100% fals.
+  const v20Mesa = perMesa("Vots 20h");
+  const escrutat = v20Mesa.length && v20Mesa.every(v=>v>0)
+      ? totalMesa.reduce((s,v)=>s+v,0) / v20Mesa.reduce((s,v)=>s+v,0)
+      : (meses ? mesesComptades/meses : escFulla);
+  return { escrutat: Math.min(1,Math.max(0,escrutat)), partits, blancs, nuls, meses, mesesComptades, cens, censComptat,
+           v12:val("Vots 12h"), v18:val("Vots 18h"), v20:val("Vots 20h"), allV20: v20Mesa.length>0 && v20Mesa.every(v=>v>0),
+           missing: Object.keys(CONFIG.partits).filter(k=>!noms.includes(k)) };
+}
+
+
+function fakeData(d){ // ?demo : omple la fulla buida amb números inventats per veure com queda
+  demoStep = Math.min(d.meses, demoStep+1);
+  const f = demoStep/d.meses, base={ "PSC-PSOE":790,"ERC":505,"JxCAT":452,"Comuns-FA":352,"Alhora":96,"PP":214,"VOX":181,"Partit Comunista":14,"SALF":22,"Frente Obrero":9,"Democracia sXXI":5 };
+  d.partits.forEach(p=>p.v=Math.round((base[p.key]||0)*f*(0.9+0.2*Math.sin(p.v23||7))));
+  d.blancs=Math.round(38*f); d.nuls=Math.round(23*f); d.mesesComptades=demoStep; d.escrutat=f; d.v20=2790; d.allV20=true;
+  return d;
+}
+
+
+async function fetchSheet(url){
+  const res = await fetch(url + "&_=" + Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error(res.status);
+  const txt = await res.text();
+  if(/^\s*</.test(txt)) throw new Error("resposta no és CSV");   // p. ex. pàgina d'error o d'inici de sessió
+  const d = readSheet(parseCSV(txt));
+  if(!d.partits.length) throw new Error("no s'han trobat partits");
+  return d;
+}
+
+const totalVots = d => d.partits.reduce((s,p)=>s+p.v,0) + d.blancs + d.nuls;
+
+/* ===================================================================== */
+const fmt = n => n.toLocaleString("ca-ES");
+const pct = (x,d=1) => (x*100).toLocaleString("ca-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
+let demoStep = 0;
+const params = new URLSearchParams(location.search);
+const DEMO = params.has("demo");
+const $ = id => document.getElementById(id);
+
+const FORMATS = {
+  quadrat:  {w:1080, h:1080, max:6,  info:"1080 × 1080 px · publicació quadrada"},
+  vertical: {w:1080, h:1350, max:8,  info:"1080 × 1350 px · publicació d'Instagram"},
+  story:    {w:1080, h:1920, max:11, info:"1080 × 1920 px · story d'Instagram o estat de WhatsApp"},
+};
+const C = {ona:"#6E8F3A", deep:"#4F6B24", wash:"#EEF3E4", fg:"#1E2419", muted:"#626B58", line:"#DFE3D6", track:"#EEF0E9", up:"#2F7D3B", down:"#B23A2E", warn:"#B7791F"};
+let format = "vertical", last = null, logo = null;
+try{ const f = localStorage.getItem("xarxes-format"); if (FORMATS[f]) format = f; }catch(_){}
+
+const logoImg = new Image();
+logoImg.onload = () => { logo = tint(logoImg, "#FFFFFF"); draw(); };
+logoImg.src = "logo-ona.png";
+function tint(img, color){
+  const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0); x.globalCompositeOperation = "source-in";
+  x.fillStyle = color; x.fillRect(0, 0, c.width, c.height); return c;
+}
+
+function summary(d){
+  const Tc = d.partits.reduce((s,p)=>s+p.v,0), T = Tc + d.blancs, votants = T + d.nuls;
+  const f = d.escrutat || (d.meses ? d.mesesComptades/d.meses : 0);
+  const part = d.allV20 ? d.v20/d.cens : (d.censComptat>0 && votants ? votants/d.censComptat : null);
+  const rows = d.partits.map(p=>({...p, s26: T? p.v/T : 0, s23: p.v23!=null ? p.v23/CONFIG.valids2023 : null}))
+                        .sort((a,b)=>b.v-a.v || (b.v23||0)-(a.v23||0));
+  return {T, votants, f, part, rows};
+}
+
+function roundRect(x, X, Y, W, H, r){ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+W,Y,X+W,Y+H,r); x.arcTo(X+W,Y+H,X,Y+H,r); x.arcTo(X,Y+H,X,Y,r); x.arcTo(X,Y,X+W,Y,r); x.closePath(); }
+function fitText(x, text, maxW){ if (x.measureText(text).width <= maxW) return text; let t = text; while (t.length>1 && x.measureText(t+"…").width > maxW) t = t.slice(0,-1); return t+"…"; }
+
+function draw(){
+  const F = FORMATS[format], cv = $("cv"), x = cv.getContext("2d");
+  cv.width = F.w; cv.height = F.h;
+  const W = F.w, H = F.h, P = 64;
+  x.fillStyle = "#FFFFFF"; x.fillRect(0,0,W,H);
+  x.textBaseline = "alphabetic";
+
+  // Capçalera verda
+  const headH = format==="story" ? 420 : format==="quadrat" ? 250 : 300;
+  x.fillStyle = C.ona; x.fillRect(0,0,W,headH);
+  if (logo){ const lw = 300, lh = lw*logo.height/logo.width; x.drawImage(logo, W-P-lw, P-6, lw, lh); }
+  x.fillStyle = "rgba(255,255,255,.85)"; x.font = "700 26px Inter"; x.letterSpacing = "3px";
+  x.fillText("ELECCIONS AL CONGRÉS · 29N", P, headH-150);
+  x.letterSpacing = "0px";
+  x.fillStyle = "#FFFFFF"; x.font = "800 64px Bitter";
+  x.fillText("Resultats a", P, headH-84); x.fillText("Sant Feliu de Codines", P, headH-20);
+
+  if (!last){ x.fillStyle = C.muted; x.font = "600 34px Inter"; x.fillText("Carregant dades…", P, headH+120); return; }
+  const S = summary(last);
+
+  // Franja d'escrutini
+  let y = headH + (format==="quadrat" ? 60 : 70);
+  x.fillStyle = C.track; x.fillRect(0, headH, W, 10); x.fillStyle = C.deep; x.fillRect(0, headH, W*S.f, 10);
+  const kpi = (label, value, X) => { x.fillStyle = C.muted; x.font = "700 22px Inter"; x.letterSpacing="2px"; x.fillText(label, X, y); x.letterSpacing="0px"; x.fillStyle = C.fg; x.font = "800 52px Bitter"; x.fillText(value, X, y+58); };
+  kpi("ESCRUTAT", pct(S.f, S.f<1?1:0)+"%", P);
+  kpi("PARTICIPACIÓ", S.part!=null ? pct(S.part)+"%" : "—", P+330);
+  x.fillStyle = C.muted; x.font = "500 24px Inter";
+  x.fillText(`2023: ${pct(CONFIG.participacio2023)}%`, P+330, y+96);
+  kpi("VOTS", fmt(S.votants), P+690);
+  y += format==="quadrat" ? 118 : 150;
+  x.fillStyle = C.line; x.fillRect(P, y, W-2*P, 2); y += format==="quadrat" ? 20 : 28;
+
+  // Partits
+  // Només hi caben les files que tinguin com a mínim 88 px; la resta s'agrupa a "Altres"
+  const footH = 120, MIN_ROW = format==="quadrat" ? 80 : 88;
+  const candidates = S.rows.filter(r=>r.v>0 || (S.T===0 && r.s23!=null));
+  const fits = Math.floor((H - y - footH - 50) / MIN_ROW);
+  const shown = candidates.slice(0, Math.max(1, Math.min(F.max, fits)));
+  const rest = S.rows.filter(r=>!shown.includes(r)).reduce((s,r)=>s+r.v,0);
+  const avail = H - y - footH - (rest>0 ? 50 : 0);
+  const rowH = Math.min(118, Math.floor(avail / Math.max(shown.length,1)));
+  const maxS = Math.max(...shown.map(r=>Math.max(r.s26, r.s23||0)), 0.01);
+  const nameW = 300, valX = W-P, barX = P+nameW, barW = W-P-barX-210;
+  shown.forEach((r,i)=>{
+    const top = y + i*rowH, mid = top + rowH/2;
+    x.fillStyle = r.color; roundRect(x, P, mid-26, 14, 52, 4); x.fill();
+    // nom: si no hi cap, primer es fa més petit (fins a 24 px) i només en últim cas es retalla
+    x.fillStyle = C.fg; let fs = 34; x.font = `700 ${fs}px Inter`;
+    while (fs > 24 && x.measureText(r.nom).width > nameW-40){ fs -= 2; x.font = `700 ${fs}px Inter`; }
+    x.fillText(fitText(x, r.nom, nameW-40), P+30, mid+12);
+    // barra 2026 i referència 2023
+    x.fillStyle = C.track; roundRect(x, barX, mid-20, barW, 34, 6); x.fill();
+    x.fillStyle = r.color; roundRect(x, barX, mid-20, Math.max(6, barW*r.s26/maxS), 26, 6); x.fill();
+    if (r.s23!=null){ x.globalAlpha = .4; x.fillRect(barX, mid+8, barW*r.s23/maxS, 6); x.globalAlpha = 1; }
+    // % i diferència
+    x.textAlign = "right";
+    x.fillStyle = C.fg; x.font = "800 44px Bitter"; x.fillText(pct(r.s26)+"%", valX, mid+6);
+    let dTxt, dCol;
+    if (r.s23==null){ dTxt = `${fmt(r.v)} vots · nou`; dCol = C.muted; }
+    else { const dd = (r.s26-r.s23)*100; const z = Math.abs(dd)<0.05;
+      dTxt = `${fmt(r.v)} vots · ${z?"=":dd>0?"▲":"▼"} ${Math.abs(dd).toFixed(1).replace(".",",")}`; dCol = z?C.muted:dd>0?C.up:C.down; }
+    x.fillStyle = dCol; x.font = "600 22px Inter"; x.fillText(dTxt, valX, mid+38);
+    x.textAlign = "left";
+  });
+  y += shown.length*rowH;
+  if (rest>0){ x.fillStyle = C.muted; x.font = "500 24px Inter"; x.fillText(`Altres candidatures: ${pct(S.T? rest/S.T : 0)}% (${fmt(rest)} vots)`, P, y+30); }
+
+  // Peu
+  x.fillStyle = C.line; x.fillRect(P, H-footH, W-2*P, 2);
+  x.fillStyle = C.muted; x.font = "500 22px Inter";
+  x.fillText("% sobre vots vàlids · ▲▼ punts respecte del 2023 · barra fina: 2023", P, H-footH+44);
+  x.fillStyle = C.fg; x.font = "700 26px Inter"; x.fillText("onacodinenca.cat · 107.2 FM", P, H-footH+86);
+  x.textAlign = "right"; x.fillStyle = C.muted; x.font = "500 22px Inter";
+  if (DEMO){ x.fillStyle = C.down; x.font = "800 26px Inter"; x.fillText("DADES DE PROVA", W-P, H-footH+86); }
+  else x.fillText("Recompte d'Ona Codinenca", W-P, H-footH+86);
+  x.textAlign = "left";
+
+  // Etiqueta PROVISIONAL
+  const llindar = Math.min(100, Math.max(0, +$("llindar").value || 0)) / 100;
+  if (S.f < llindar - 1e-9){
+    const txt = `PROVISIONAL · ${pct(S.f, 1)}% ESCRUTAT`;
+    x.font = "800 28px Inter"; const tw = x.measureText(txt).width + 44;
+    const by = Math.max(30, headH-232);
+    x.fillStyle = C.warn; roundRect(x, P, by, tw, 52, 26); x.fill();
+    x.fillStyle = "#FFFFFF"; x.fillText(txt, P+22, by+36);
+  }
+  
+}
+
+function updateUI(){
+  if (!last){ return; }
+  const S = summary(last);
+  const llindar = Math.min(100, Math.max(0, +$("llindar").value || 0)) / 100;
+  const ok = S.f >= llindar - 1e-9, prov = $("provisional").checked;
+  const st = $("state");
+  st.className = "state" + (ok ? "" : " wait");
+  st.textContent = ok ? `Escrutat ${pct(S.f, S.f<1?1:0)}%: ja es pot publicar.`
+                      : `Escrutat ${pct(S.f, S.f<1?1:0)}%. El botó s'activa en arribar al ${Math.round(llindar*100)}%` + (prov ? " (ara sortirà marcada com a provisional)." : ".");
+  $("dl").disabled = !(ok || prov);
+  $("share").disabled = !(ok || prov);
+  draw();
+}
+
+function fileName(){
+  const S = last ? summary(last) : {f:0};
+  return `eleccions-29N-sant-feliu-${format}-${Math.round(S.f*100)}pc.png`;
+}
+function toBlob(){ return new Promise(r=>$("cv").toBlob(r, "image/png")); }
+$("dl").onclick = async () => {
+  const blob = await toBlob(); const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = fileName(); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+};
+// Al mòbil: compartir directament a Instagram, WhatsApp...
+(async ()=>{
+  try{
+    const test = new File([new Blob(["x"],{type:"image/png"})], "t.png", {type:"image/png"});
+    if (navigator.canShare && navigator.canShare({files:[test]})) $("share").hidden = false;
+  }catch(_){}
+})();
+$("share").onclick = async () => {
+  try{
+    const blob = await toBlob();
+    await navigator.share({files:[new File([blob], fileName(), {type:"image/png"})], title:"Resultats 29N a Sant Feliu de Codines"});
+  }catch(_){}
+};
+
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
+  format = b.dataset.f;
+  document.querySelectorAll(".seg button").forEach(o=>o.setAttribute("aria-pressed", o===b));
+  $("fmtInfo").textContent = FORMATS[format].info;
+  try{ localStorage.setItem("xarxes-format", format); }catch(_){}
+  draw();
+});
+document.querySelectorAll(".seg button").forEach(o=>o.setAttribute("aria-pressed", o.dataset.f===format));
+$("fmtInfo").textContent = FORMATS[format].info;
+$("llindar").value = CONFIG.llindarXarxes ?? 100;
+$("llindar").oninput = updateUI; $("provisional").onchange = updateUI;
+
+async function load(){
+  let d;
+  try{ d = await fetchSheet(CONFIG.csvViu); }
+  catch(e1){ try{ d = await fetchSheet(CONFIG.csvPublicat); if (last && totalVots(d) < totalVots(last)) return; } catch(e2){ $("upd").textContent = "No s'han pogut llegir les dades. Es tornarà a provar sol."; return; } }
+  if (DEMO) d = fakeData(d);
+  last = d; updateUI();
+  $("upd").textContent = "Dades actualitzades a les " + new Date().toLocaleTimeString("ca-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"}) + (DEMO ? " · DADES DE PROVA" : "");
+}
+// Dibuixa quan les fonts estiguin a punt (si no, el canvas faria servir una font de recanvi)
+Promise.all([document.fonts.load("800 64px Bitter"), document.fonts.load("700 34px Inter"), document.fonts.load("800 28px Inter"), document.fonts.load("500 22px Inter")])
+  .catch(()=>{}).finally(()=>{ draw(); load(); setInterval(load, (DEMO?4:CONFIG.refreshSeconds)*1000); });
+</script>
+</body>
+</html>
