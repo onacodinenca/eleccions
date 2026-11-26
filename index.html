@@ -314,11 +314,16 @@ async function load(){
   return true;
 }
 
-$("fn").textContent = "% sobre vots vàlids. El 23J 2023 també es van presentar: " +
-  CONFIG.noPresentats2023.map(([n,v])=>`${n} ${pct(v/CONFIG.valids2023)}%`).join(" · ") + ".";
+// Nota del peu: segueix el selector % / Vots
+function renderFn(){
+  const isV = unit==="vots";
+  $("fn").textContent = (isV ? "" : "% sobre vots vàlids. ") + "El 23J 2023 també es van presentar: " +
+    CONFIG.noPresentats2023.map(([n,v])=> isV ? `${n} ${fmt(v)} vots` : `${n} ${pct(v/CONFIG.valids2023)}%`).join(" · ") + ".";
+}
+renderFn();
 
 const uPct=$("uPct"), uVots=$("uVots");
-function setUnit(u){ unit=u; uPct.setAttribute("aria-pressed",u==="pct"); uVots.setAttribute("aria-pressed",u==="vots"); if(last) render(last); }
+function setUnit(u){ unit=u; uPct.setAttribute("aria-pressed",u==="pct"); uVots.setAttribute("aria-pressed",u==="vots"); renderFn(); if(last) render(last); }
 uPct.onclick=()=>setUnit("pct"); uVots.onclick=()=>setUnit("vots");
 
 // Alçada automàtica: avisa la pàgina que conté l'iframe de quina alçada fa el giny,
