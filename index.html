@@ -298,6 +298,18 @@ const uPct=$("uPct"), uVots=$("uVots");
 function setUnit(u){ unit=u; uPct.setAttribute("aria-pressed",u==="pct"); uVots.setAttribute("aria-pressed",u==="vots"); if(last) render(last); }
 uPct.onclick=()=>setUnit("pct"); uVots.onclick=()=>setUnit("vots");
 
+// Alçada automàtica: avisa la pàgina que conté l'iframe de quina alçada fa el giny,
+// perquè l'iframe s'ajusti sol (cal el petit script de LLEGEIX-ME a la web).
+const widgetEl = document.querySelector(".widget");
+let lastH = 0;
+function sendHeight(){
+  const h = Math.ceil(widgetEl.getBoundingClientRect().height) + 2;
+  if (h !== lastH && window.parent !== window){ lastH = h; window.parent.postMessage({giny29n: h}, "*"); }
+}
+if ("ResizeObserver" in window) new ResizeObserver(sendHeight).observe(widgetEl);
+window.addEventListener("load", sendHeight);
+setInterval(sendHeight, 2000);
+
 load();
 setInterval(load, (DEMO?4:CONFIG.refreshSeconds)*1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
