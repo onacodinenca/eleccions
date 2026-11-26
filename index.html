@@ -126,9 +126,16 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);
 <script>
 /* ===================== CONFIGURACIÓ ===================== */
 const CONFIG = {
-  // Pestanya "Entrada de dades" publicada com a CSV
-  csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyZDitFZpVx6YvGhRGa3v7OEFRjDVyNb-bPdZmoUBTm3glNf7FeY5_5YskX3F23_tSv6-_ccSR-kXb/pub?gid=12&single=true&output=csv",
-  refreshSeconds: 15,          // + Google tarda ~30 s a publicar: total < 1 minut
+  // Font principal: la fulla en directe (pestanya "Entrada de dades", gid=12). Cal que la fulla estigui
+  // compartida com a "Qualsevol persona amb l'enllaç: LECTOR". Llegeix les dades al moment.
+  csvViu: "https://docs.google.com/spreadsheets/d/1e6iMBITaT4oST5oIbllKUnfcdV664T-v2K8KvSZ2J0k/gviz/tq?tqx=out:csv&gid=12&headers=0",
+  // Recanvi si la principal falla: la versió "Publicar al web" (va amb ~30 s de retard i de vegades
+  // Google serveix còpies antigues; per això, en aquest mode, mai s'accepten dades amb menys vots que les darreres)
+  csvPublicat: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyZDitFZpVx6YvGhRGa3v7OEFRjDVyNb-bPdZmoUBTm3glNf7FeY5_5YskX3F23_tSv6-_ccSR-kXb/pub?gid=12&single=true&output=csv",
+  refreshSeconds: 15,
+  // Disposició de la fulla, per si la capçalera no arriba (la font en directe la perd):
+  // meses a les columnes B–I, TOTAL a la K
+  columnesMeses: [1,2,3,4,5,6,7,8], columnaTotal: 10,
   censDefecte: 4834,          // s'usa si la fila "Cens" de la fulla és 0
   participacio2023: 0.583,
   // Color i vots del 23J 2023 per a cada partit, pel nom EXACTE de la fila a la fulla.
@@ -182,15 +189,18 @@ function parseCSV(text){
 
 function readSheet(rows){
   const head = rows[0]||[];
-  const iTot = head.findIndex(h=>h.trim().toUpperCase()==="TOTAL");
-  const mesaCols = []; for(let i=1;i<(iTot>0?iTot:head.length);i++) if(head[i].trim()) mesaCols.push(i);
+  let iTot = head.findIndex(h=>h.trim().toUpperCase()==="TOTAL");
+  let mesaCols = []; if(iTot>0) for(let i=1;i<iTot;i++) if(head[i].trim()) mesaCols.push(i);
+  if(iTot<=0 || !mesaCols.length){ iTot = CONFIG.columnaTotal; mesaCols = CONFIG.columnesMeses.slice(); }
   const byLabel = {}; rows.forEach(r=>{ const k=(r[0]||"").trim(); if(k && !(k in byLabel)) byLabel[k]=r; });
   const val = (label) => { const r=byLabel[label]; if(!r) return 0; return iTot>0 ? num(r[iTot]) : mesaCols.reduce((s,i)=>s+num(r[i]),0); };
   const perMesa = (label) => { const r=byLabel[label]; return mesaCols.map(i=> r?num(r[i]):0); };
   const e0 = ((rows[1]||[])[0]||"").trim();          // cel·la A2, p. ex. "78,50%"
   const escFulla = e0.includes("%") ? num(e0)/100 : num(e0);
   // Partits = files des de la 3a fins a la primera fila buida, amb el nom tal com és a la fulla
-  const noms = []; for(let i=2;i<rows.length;i++){ const k=(rows[i][0]||"").trim(); if(!k) break; noms.push(k); }
+  // (la font en directe es menja les files buides, així que també s'atura a la fila "Blancs" o qualsevol altra fila fixa)
+  const FIXES = ["blancs","nuls","total","vots 20h","alerta","vots 12h","vots 18h","cens"];
+  const noms = []; for(let i=2;i<rows.length;i++){ const k=(rows[i][0]||"").trim(); if(!k || FIXES.includes(k.toLowerCase())) break; noms.push(k); }
   const partits = noms.map(k=>{ const c=CONFIG.partits[k]||{}; return {key:k, nom:k, color:c.color||CONFIG.colorDefecte, v23:(c.v23??null), v:val(k)}; });
   const blancs = val("Blancs"), nuls = val("Nuls");
   const totalMesa = perMesa("Total");
@@ -303,21 +313,38 @@ function render(d){
   rows.querySelectorAll(".row").forEach(r=>{ if(!d.partits.some(p=>p.key===r.dataset.k)) r.remove(); });
 }
 
+async function fetchSheet(url){
+  const res = await fetch(url + "&_=" + Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error(res.status);
+  const txt = await res.text();
+  if(/^\s*</.test(txt)) throw new Error("resposta no és CSV");   // p. ex. pàgina d'error o d'inici de sessió
+  const d = readSheet(parseCSV(txt));
+  if(!d.partits.length) throw new Error("no s'han trobat partits");
+  return d;
+}
+const totalVots = d => d.partits.reduce((s,p)=>s+p.v,0) + d.blancs + d.nuls;
+let font = "";
 async function load(){
+  let d;
   try{
-    const res = await fetch(CONFIG.csv + "&_=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error(res.status);
-    let d = readSheet(parseCSV(await res.text()));
-    if(d.missing.length) console.warn("Files no trobades a la fulla:", d.missing);
-    if(DEMO) d = fakeData(d);
-    last=d; render(d);
-    const now=new Date();
-    $("upd").innerHTML = `Actualitzat a les <b>${now.toLocaleTimeString("ca-ES",{hour:"2-digit",minute:"2-digit"})}</b> · s'actualitza sol${DEMO?" · <b>DADES DE PROVA</b>":""}`;
-  }catch(e){
-    const st=$("status"); st.className="status err"; $("statustxt").textContent="Reconnectant…";
-    console.error(e);
-    return false;
+    d = await fetchSheet(CONFIG.csvViu); font = "viu";
+  }catch(e1){
+    console.warn("Font en directe no disponible, provo la publicada:", e1);
+    try{
+      d = await fetchSheet(CONFIG.csvPublicat); font = "publicat";
+      // La versió publicada a vegades arriba endarrerida: si té menys vots que la darrera bona, s'ignora
+      if(last && totalVots(d) < totalVots(last)) return true;
+    }catch(e2){
+      const st=$("status"); st.className="status err"; $("statustxt").textContent="Reconnectant…";
+      console.error(e2);
+      return false;
+    }
   }
+  if(d.missing.length) console.warn("Files no trobades a la fulla:", d.missing);
+  if(DEMO) d = fakeData(d);
+  last=d; render(d);
+  const now=new Date();
+  $("upd").innerHTML = `Actualitzat a les <b>${now.toLocaleTimeString("ca-ES",{hour:"2-digit",minute:"2-digit"})}</b> · s'actualitza sol${DEMO?" · <b>DADES DE PROVA</b>":""}`;
   return true;
 }
 
