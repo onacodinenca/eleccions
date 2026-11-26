@@ -107,7 +107,7 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);
     <div class="kpi"><div class="k">Cens</div><div class="v" id="kCens">—</div><div class="s">electors</div></div>
   </div>
   <div class="tools">
-    <div class="legend"><span><i class="sw26"></i>29N 2026</span><span><i class="sw23"></i><span id="lg23">23J 2023</span></span></div>
+    <div class="legend"><span><i class="sw26"></i>2026</span><span><i class="sw23"></i><span id="lg23">2023</span></span></div>
     <div class="seg" role="group" aria-label="Unitat">
       <button type="button" id="uPct" aria-pressed="true">%</button>
       <button type="button" id="uVots" aria-pressed="false">Vots</button>
@@ -249,14 +249,14 @@ function render(d){
   $("statustxt").textContent = !live ? "Esperant resultats" : done ? "Escrutini complet" : "En directe";
 
   const note=$("note");
-  if(!live){ note.hidden=false; note.textContent="Encara no hi ha cap mesa escrutada. Les barres fines mostren el resultat del 23J 2023 com a referència."; }
+  if(!live){ note.hidden=false; note.textContent="Encara no hi ha cap mesa escrutada. Les barres fines i la columna 2023 mostren el resultat del 2023 com a referència."; }
   else note.hidden=true;
 
   const T23 = CONFIG.valids2023;
   const isV = unit==="vots";
   document.querySelector(".widget").classList.toggle("u-vots", isV);
-  $("hD").textContent = isV ? "23J" : "vs 2023";
-  $("lg23").textContent = isV ? "23J 2023 (vots finals)" : "23J 2023";
+  $("hD").textContent = (isV || !live) ? "2023" : "vs 2023";
+  $("lg23").textContent = isV ? "2023 (vots finals)" : "2023";
   const sorted=[...d.partits].sort((a,b)=> live ? (b.v-a.v)||((b.v23||0)-(a.v23||0)) : ((b.v23||0)-(a.v23||0)));
   // % : barres en percentatge (2026 i 2023 comparables en tot moment)
   // Vots: barres en vots absoluts; la marca del 2023 són els vots finals del 23J, i la barra 2026 hi va creixent
@@ -279,18 +279,25 @@ function render(d){
     const s26=T?p.v/T:0, s23=p.v23!=null?p.v23/T23:0;
     r.querySelector(".bar i").style.width = ((isV ? p.v/maxV : s26/maxS)*100)+"%";
     r.querySelector(".bar u").style.width = ((isV ? (p.v23||0)/maxV : s23/maxS)*100)+"%";
-    r.querySelector(".num").textContent = live ? fmt(p.v) : (isV && p.v23!=null ? fmt(p.v23) : "—");
-    r.querySelector(".pct").textContent = live ? pct(s26)+"%" : (p.v23!=null? pct(s23)+"%" : "—");
+    // Columnes Vots i % = sempre 2026 (buides abans de la primera mesa)
+    r.querySelector(".num").textContent = live ? fmt(p.v) : "—";
+    r.querySelector(".pct").textContent = live ? pct(s26)+"%" : "—";
     const dEl=r.querySelector(".delta");
     dEl.title="";
     if(p.v23==null){ dEl.className="delta eq"; dEl.textContent="nou"; }
-    else if(!live){ dEl.className="delta eq"; dEl.textContent="23J"; }
-    else if(isV){ dEl.className="delta eq"; dEl.textContent=fmt(p.v23); dEl.title="vots al 23J 2023"; }
+    else if(!live){ dEl.className="delta eq"; dEl.textContent = isV ? fmt(p.v23) : pct(s23)+"%"; dEl.title="resultat del 2023"; }
+    else if(isV){
+      // Vots del 23J, pintats en verd/vermell només amb l'escrutini complet (abans dependria de la participació)
+      const dv = p.v - p.v23;
+      const up = done && dv>0, down = done && dv<0;
+      dEl.className = "delta " + (up?"up":down?"down":"eq");
+      dEl.textContent = (up?"▲ ":down?"▼ ":"") + fmt(p.v23);
+      dEl.title = `vots el 2023: ${fmt(p.v23)}` + (done ? ` (${dv>=0?"+":"−"}${fmt(Math.abs(dv))})` : ""); }
     else { const dd=(s26-s23)*100; const z=Math.abs(dd)<0.05;
       dEl.className="delta "+(z?"eq":dd>0?"up":"down");
       dEl.textContent=(z?"= ":dd>0?"▲ ":"▼ ")+Math.abs(dd).toFixed(1).replace(".",",");
-      dEl.title="punts percentuals respecte del 23J 2023"; }
-    r.setAttribute("aria-label",`${p.nom}: ${live?fmt(p.v)+" vots, "+pct(s26)+"%":"sense dades"}${p.v23!=null?"; 23J 2023: "+fmt(p.v23)+" vots, "+pct(s23)+"%":""}`);
+      dEl.title="punts percentuals respecte del 2023"; }
+    r.setAttribute("aria-label",`${p.nom}: ${live?fmt(p.v)+" vots, "+pct(s26)+"%":"sense dades"}${p.v23!=null?"; 2023: "+fmt(p.v23)+" vots, "+pct(s23)+"%":""}`);
   });
   // treu files de partits que ja no són a la fulla
   rows.querySelectorAll(".row").forEach(r=>{ if(!d.partits.some(p=>p.key===r.dataset.k)) r.remove(); });
@@ -317,7 +324,7 @@ async function load(){
 // Nota del peu: segueix el selector % / Vots
 function renderFn(){
   const isV = unit==="vots";
-  $("fn").textContent = (isV ? "" : "% sobre vots vàlids. ") + "El 23J 2023 també es van presentar: " +
+  $("fn").textContent = (isV ? "" : "% sobre vots vàlids. ") + "El 2023 també es van presentar: " +
     CONFIG.noPresentats2023.map(([n,v])=> isV ? `${n} ${fmt(v)} vots` : `${n} ${pct(v/CONFIG.valids2023)}%`).join(" · ") + ".";
 }
 renderFn();
