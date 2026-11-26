@@ -21,7 +21,7 @@
   --up:#7CC488; --down:#F0877B; color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;text-align:left}
 .widget{container-type:inline-size;background:var(--card);border:1px solid var(--line);border-radius:5px;overflow:hidden;width:100%;margin:0}
 .top{background:var(--ona);color:#fff;padding:14px 18px 12px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;justify-content:space-between}
 :root[data-theme="dark"] .top{color:#12160F}
@@ -62,8 +62,9 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);
 .bar{position:relative;height:22px;background:var(--track);border-radius:4px;overflow:hidden}
 .bar i{position:absolute;left:0;top:0;bottom:7px;border-radius:4px 4px 0 0;width:0;transition:width .6s ease}
 .bar u{position:absolute;left:0;bottom:0;height:4px;border-radius:2px;opacity:.38;width:0;transition:width .6s ease}
-.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-.pct{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.num,.pct{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:500}
+.widget:not(.u-vots) .pct,.widget.u-vots .num{color:var(--fg);font-weight:700}
+.widget:not(.u-vots) .cols .hP,.widget.u-vots .cols .hV{color:var(--fg)}
 .delta{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;white-space:nowrap}
 .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.eq{color:var(--muted)}
 .note{margin:4px 18px 8px;padding:12px 14px;border-radius:5px;background:var(--ona-wash);color:var(--ona-deep);font-size:14px}
@@ -106,14 +107,14 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);
     <div class="kpi"><div class="k">Cens</div><div class="v" id="kCens">—</div><div class="s">electors</div></div>
   </div>
   <div class="tools">
-    <div class="legend"><span><i class="sw26"></i>29N 2026</span><span><i class="sw23"></i>23J 2023</span></div>
+    <div class="legend"><span><i class="sw26"></i>29N 2026</span><span><i class="sw23"></i><span id="lg23">23J 2023</span></span></div>
     <div class="seg" role="group" aria-label="Unitat">
       <button type="button" id="uPct" aria-pressed="true">%</button>
       <button type="button" id="uVots" aria-pressed="false">Vots</button>
     </div>
   </div>
   <div class="note" id="note" hidden></div>
-  <div class="cols" aria-hidden="true"><div>Partit</div><div></div><div>Vots</div><div>%</div><div>vs 2023</div></div>
+  <div class="cols" aria-hidden="true"><div>Partit</div><div></div><div class="hV">Vots</div><div class="hP">%</div><div id="hD">vs 2023</div></div>
   <div class="rows" id="rows"></div>
   <p class="fn" id="fn"></p>
   <footer class="foot">
@@ -127,7 +128,7 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,5cqi,28px);
 const CONFIG = {
   // Pestanya "Entrada de dades" publicada com a CSV
   csv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSyZDitFZpVx6YvGhRGa3v7OEFRjDVyNb-bPdZmoUBTm3glNf7FeY5_5YskX3F23_tSv6-_ccSR-kXb/pub?gid=12&single=true&output=csv",
-  refreshSeconds: 30,
+  refreshSeconds: 15,          // + Google tarda ~30 s a publicar: total < 1 minut
   censDefecte: 4834,          // s'usa si la fila "Cens" de la fulla és 0
   participacio2023: 0.583,
   // Color i vots del 23J 2023 per a cada partit, pel nom EXACTE de la fila a la fulla.
@@ -194,8 +195,10 @@ function readSheet(rows){
   const blancs = val("Blancs"), nuls = val("Nuls");
   const totalMesa = perMesa("Total");
   const meses = mesaCols.length, mesesComptades = totalMesa.filter(v=>v>0).length;
-  const cens = val("Cens") || CONFIG.censDefecte;
+  // Compte: a la fulla, la cel·la TOTAL de la fila "Cens" (K24) és =K19 (els Vots 20h), no el cens.
+  // Per això el cens se suma mesa a mesa (B24:I24); si està buit, s'usa el valor per defecte.
   const censMeses = perMesa("Cens");
+  const cens = censMeses.reduce((s,v)=>s+v,0) || CONFIG.censDefecte;
   const censComptat = censMeses.some(v=>v>0) ? censMeses.reduce((s,v,i)=>s+(totalMesa[i]>0?v:0),0) : 0;
   // % escrutat: si hi ha els "Vots 20h" de TOTES les meses, vots comptats / votants (com la fórmula de la fulla).
   // Si no, meses comptades / meses totals, per no mostrar un 100% fals.
@@ -204,7 +207,7 @@ function readSheet(rows){
       ? totalMesa.reduce((s,v)=>s+v,0) / v20Mesa.reduce((s,v)=>s+v,0)
       : (meses ? mesesComptades/meses : escFulla);
   return { escrutat: Math.min(1,Math.max(0,escrutat)), partits, blancs, nuls, meses, mesesComptades, cens, censComptat,
-           v12:val("Vots 12h"), v18:val("Vots 18h"), v20:val("Vots 20h"),
+           v12:val("Vots 12h"), v18:val("Vots 18h"), v20:val("Vots 20h"), allV20: v20Mesa.length>0 && v20Mesa.every(v=>v>0),
            missing: Object.keys(CONFIG.partits).filter(k=>!noms.includes(k)) };
 }
 
@@ -212,7 +215,7 @@ function fakeData(d){ // ?demo : omple la fulla buida amb números inventats per
   demoStep = Math.min(d.meses, demoStep+1);
   const f = demoStep/d.meses, base={ "PSC-PSOE":790,"ERC":505,"JxCAT":452,"Comuns-FA":352,"Alhora":96,"PP":214,"VOX":181,"Partit Comunista":14,"SALF":22,"Frente Obrero":9,"Democracia sXXI":5 };
   d.partits.forEach(p=>p.v=Math.round((base[p.key]||0)*f*(0.9+0.2*Math.sin(p.v23||7))));
-  d.blancs=Math.round(38*f); d.nuls=Math.round(23*f); d.mesesComptades=demoStep; d.escrutat=f; d.v20=Math.round(2790);
+  d.blancs=Math.round(38*f); d.nuls=Math.round(23*f); d.mesesComptades=demoStep; d.escrutat=f; d.v20=2790; d.allV20=true;
   return d;
 }
 
@@ -231,7 +234,7 @@ function render(d){
 
   // Participació: 1) vots a les 20 h si s'han entrat; 2) votants / cens de les meses comptades; 3) avanç de les 18 h / 12 h
   let part=null, partLbl="";
-  if(d.v20>0){ part=d.v20/d.cens; partLbl="final"; }
+  if(d.allV20){ part=d.v20/d.cens; partLbl="final"; }
   else if(live && d.censComptat>0){ part=votants/d.censComptat; partLbl="meses escrutades"; }
   else if(d.v18>0){ part=d.v18/d.cens; partLbl="avanç 18 h"; }
   else if(d.v12>0){ part=d.v12/d.cens; partLbl="avanç 12 h"; }
@@ -250,34 +253,47 @@ function render(d){
   else note.hidden=true;
 
   const T23 = CONFIG.valids2023;
+  const isV = unit==="vots";
+  document.querySelector(".widget").classList.toggle("u-vots", isV);
+  $("hD").textContent = isV ? "23J" : "vs 2023";
+  $("lg23").textContent = isV ? "23J 2023 (vots finals)" : "23J 2023";
   const sorted=[...d.partits].sort((a,b)=> live ? (b.v-a.v)||((b.v23||0)-(a.v23||0)) : ((b.v23||0)-(a.v23||0)));
+  // % : barres en percentatge (2026 i 2023 comparables en tot moment)
+  // Vots: barres en vots absoluts; la marca del 2023 són els vots finals del 23J, i la barra 2026 hi va creixent
   const maxS = Math.max(...sorted.map(p=>T?p.v/T:0), ...sorted.map(p=>(p.v23||0)/T23), 0.001);
-  const scale23 = live ? (f||1) : 1;
-  const maxV = Math.max(...sorted.map(p=>p.v), ...sorted.map(p=>(p.v23||0)*scale23), 1);
+  const maxV = Math.max(...sorted.map(p=>p.v), ...sorted.map(p=>p.v23||0), 1);
   const rows=$("rows");
   sorted.forEach(p=>{
     let r = rows.querySelector(`[data-k="${CSS.escape(p.key)}"]`);
     if(!r){
       r=document.createElement("div"); r.className="row"; r.dataset.k=p.key;
-      r.innerHTML=`<div class="name"><b style="background:${p.color}"></b><span>${p.nom}</span></div>
-        <div class="bar"><i style="background:${p.color}"></i><u style="background:${p.color}"></u></div>
+      r.innerHTML=`<div class="name"><b></b><span></span></div>
+        <div class="bar"><i></i><u></u></div>
         <div class="num"></div><div class="pct"></div><div class="delta"></div>`;
     }
+    r.querySelector(".name b").style.background = p.color;
+    r.querySelector(".name span").textContent = p.nom;
+    r.querySelector(".bar i").style.background = p.color;
+    r.querySelector(".bar u").style.background = p.color;
     rows.appendChild(r);
     const s26=T?p.v/T:0, s23=p.v23!=null?p.v23/T23:0;
-    r.querySelector(".bar i").style.width = ((unit==="pct"? s26/maxS : p.v/maxV)*100)+"%";
-    r.querySelector(".bar u").style.width = ((unit==="pct"? s23/maxS : (p.v23||0)*scale23/maxV)*100)+"%";
-    r.querySelector(".num").textContent = live ? fmt(p.v) : "—";
+    r.querySelector(".bar i").style.width = ((isV ? p.v/maxV : s26/maxS)*100)+"%";
+    r.querySelector(".bar u").style.width = ((isV ? (p.v23||0)/maxV : s23/maxS)*100)+"%";
+    r.querySelector(".num").textContent = live ? fmt(p.v) : (isV && p.v23!=null ? fmt(p.v23) : "—");
     r.querySelector(".pct").textContent = live ? pct(s26)+"%" : (p.v23!=null? pct(s23)+"%" : "—");
     const dEl=r.querySelector(".delta");
-    if(!live){ dEl.className="delta eq"; dEl.textContent = p.v23!=null ? "23J" : "nou"; }
-    else if(p.v23==null){ dEl.className="delta eq"; dEl.textContent="nou"; }
+    dEl.title="";
+    if(p.v23==null){ dEl.className="delta eq"; dEl.textContent="nou"; }
+    else if(!live){ dEl.className="delta eq"; dEl.textContent="23J"; }
+    else if(isV){ dEl.className="delta eq"; dEl.textContent=fmt(p.v23); dEl.title="vots al 23J 2023"; }
     else { const dd=(s26-s23)*100; const z=Math.abs(dd)<0.05;
       dEl.className="delta "+(z?"eq":dd>0?"up":"down");
       dEl.textContent=(z?"= ":dd>0?"▲ ":"▼ ")+Math.abs(dd).toFixed(1).replace(".",",");
       dEl.title="punts percentuals respecte del 23J 2023"; }
-    r.setAttribute("aria-label",`${p.nom}: ${live?fmt(p.v)+" vots, "+pct(s26)+"%":"sense dades"}`);
+    r.setAttribute("aria-label",`${p.nom}: ${live?fmt(p.v)+" vots, "+pct(s26)+"%":"sense dades"}${p.v23!=null?"; 23J 2023: "+fmt(p.v23)+" vots, "+pct(s23)+"%":""}`);
   });
+  // treu files de partits que ja no són a la fulla
+  rows.querySelectorAll(".row").forEach(r=>{ if(!d.partits.some(p=>p.key===r.dataset.k)) r.remove(); });
 }
 
 async function load(){
@@ -293,7 +309,9 @@ async function load(){
   }catch(e){
     const st=$("status"); st.className="status err"; $("statustxt").textContent="Reconnectant…";
     console.error(e);
+    return false;
   }
+  return true;
 }
 
 $("fn").textContent = "% sobre vots vàlids. El 23J 2023 també es van presentar: " +
@@ -315,8 +333,16 @@ if ("ResizeObserver" in window) new ResizeObserver(sendHeight).observe(widgetEl)
 window.addEventListener("load", sendHeight);
 setInterval(sendHeight, 2000);
 
-load();
-setInterval(load, (DEMO?4:CONFIG.refreshSeconds)*1000);
+// Consulta periòdica. Si Google falla (p. ex. massa consultes), espera cada cop més (fins a 2 min)
+// i torna al ritme normal quan respon bé. Un petit marge aleatori evita que tots els lectors consultin alhora.
+let fails = 0;
+async function tick(){
+  const ok = await load();
+  fails = ok ? 0 : Math.min(fails+1, 4);
+  const base = (DEMO?4:CONFIG.refreshSeconds) * 1000 * Math.pow(2, fails);
+  setTimeout(tick, Math.min(base, 120000) + Math.random()*2000);
+}
+tick();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
 </script>
 </body>
